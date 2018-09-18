@@ -1,28 +1,24 @@
 local class = require 'pl.class'
-local TestClassOpenOCD = class()
+local TestClass = require 'test_class'
+local TestClassOpenOCD = class(TestClass)
 
 
-function TestClassOpenOCD:_init(strTestName)
-  self.parameters = require 'parameters'
-  self.pl = require'pl.import_into'()
+function TestClassOpenOCD:_init(strTestName, uiTestCase, tLogWriter, strLogLevel)
+  self:super(strTestName, uiTestCase, tLogWriter, strLogLevel)
 
-  self.CFG_strTestName = strTestName
-
-  self.CFG_aParameterDefinitions = {
-    {
-      name="script",
-      default=nil,
-      help="The file name of the TCL script to execute.",
-      mandatory=true,
-      validate=nil,
-      constrains=nil
-    }
+  local P = self.P
+  self:__parameter {
+    P:P('script', 'The file name of the TCL script to execute.'):
+      required(true)
   }
 end
 
 
 
-function TestClassOpenOCD:run(aParameters, tLog)
+function TestClassOpenOCD:run()
+  local atParameter = self.atParameter
+  local tLog = self.tLog
+
   ----------------------------------------------------------------------
   --
   -- Parse the parameters and collect all options.
@@ -30,9 +26,10 @@ function TestClassOpenOCD:run(aParameters, tLog)
   local openocd = require 'luaopenocd'
 
   -- Read the TCL script.
-  local strFileName = self.pl.path.exists(aParameters['script'])
-  if strFileName==nil then
-    tLog.error('The TCL script "%s" does not exist.', aParameters['script'])
+  local strScriptFileName = atParameter['script']:get()
+  local strFileName = self.pl.path.exists(strScriptFileName)
+  if strFileName~=strScriptFileName then
+    tLog.error('The TCL script "%s" does not exist.', strScriptFileName)
     error('Failed to load the TCL script.')
   end
   local strScript = self.pl.file.read(strFileName)
