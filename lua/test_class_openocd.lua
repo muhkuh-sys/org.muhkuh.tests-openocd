@@ -9,7 +9,9 @@ function TestClassOpenOCD:_init(strTestName, uiTestCase, tLogWriter, strLogLevel
   local P = self.P
   self:__parameter {
     P:P('script', 'The file name of the TCL script to execute.'):
-      required(true)
+      required(true),
+    P:U32('retries', 'The number of retries. The default of 0 means no retries (the script must succeed at the first run).'):
+      default(0)
   }
 end
 
@@ -34,35 +36,54 @@ function TestClassOpenOCD:run()
   end
   local strScript = self.pl.file.read(strFileName)
 
+  -- Get the number of retries.
+  local ulRetries = atParameter['retries']:get()
+
   tOpenOCD = openocd.luaopenocd()
 
-  tLog.debug('Initialize OpenOCD.')
-  tOpenOCD:initialize()
+  local ulRetryCnt = ulRetries
+  local fOK = false
+  repeat
+    tLog.debug('Initialize OpenOCD.')
+    tOpenOCD:initialize()
 
-  local strResult
-  local iResult = tOpenOCD:run(strScript)
-  if iResult~=0 then
-    error('Failed to execute the script.')
-  else
-    strResult = tOpenOCD:get_result()
-    tLog.info('Script result: %s', strResult)
-    if strResult~='0' then
-      error('The script result is not "0".')
+    local strResult
+    local iResult = tOpenOCD:run(strScript)
+    if iResult~=0 then
+      error('Failed to execute the script.')
+    else
+      strResult = tOpenOCD:get_result()
+      tLog.info('Script result: %s', strResult)
+      if strResult=='0' then
+        fOK = true
+      else
+        tLog.debug('The script result is not "0".')
+        if ulRetryCnt==0 then
+          break
+        else
+          ulRetryCnt = ulRetryCnt - 1
+          tOpenOCD:run('sleep 500')
+        end
+      end
     end
+
+    tLog.debug('Uninitialize OpenOCD.')
+    tOpenOCD:uninit()
+  until fOK==true
+
+  if fOK~=true then
+    error(string.format('The script did not succeed after %d retries.', ulRetries))
+  else
+    tLog.info('')
+    tLog.info(' #######  ##    ## ')
+    tLog.info('##     ## ##   ##  ')
+    tLog.info('##     ## ##  ##   ')
+    tLog.info('##     ## #####    ')
+    tLog.info('##     ## ##  ##   ')
+    tLog.info('##     ## ##   ##  ')
+    tLog.info(' #######  ##    ## ')
+    tLog.info('')
   end
-
-  tLog.debug('Uninitialize OpenOCD.')
-  tOpenOCD:uninit()
-
-  tLog.info('')
-  tLog.info(' #######  ##    ## ')
-  tLog.info('##     ## ##   ##  ')
-  tLog.info('##     ## ##  ##   ')
-  tLog.info('##     ## #####    ')
-  tLog.info('##     ## ##  ##   ')
-  tLog.info('##     ## ##   ##  ')
-  tLog.info(' #######  ##    ## ')
-  tLog.info('')
 end
 
 return TestClassOpenOCD
