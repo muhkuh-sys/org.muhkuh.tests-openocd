@@ -7,7 +7,7 @@
 	      vcs-id="${PROJECT_VERSION_VCS}"
 	      extension="zip">
 		<license name="GPL-2.0"/>
-		<author name="Muhkuh team" url="https://github.com/muhkuh-sys/org.muhkuh.tests-ftdi_eeprom_init" />
+		<author name="Muhkuh team" url="https://github.com/muhkuh-sys/org.muhkuh.tests-openocd" />
 		<description>
 			Run a TCL script to execute OpenOCD actions.
 		</description>
