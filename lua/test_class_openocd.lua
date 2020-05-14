@@ -39,7 +39,11 @@ function TestClassOpenOCD:run()
   -- Get the number of retries.
   local ulRetries = atParameter['retries']:get()
 
-  tOpenOCD = openocd.luaopenocd()
+  -- Define the callback function for openocd.
+  local fnCallback = function(strMessage)
+    tLog.debug(strMessage)
+  end
+  tOpenOCD = openocd.luaopenocd(fnCallback)
 
   local ulRetryCnt = ulRetries
   local fOK = false
