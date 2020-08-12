@@ -47,6 +47,7 @@ function TestClassOpenOCD:run()
 
   local ulRetryCnt = ulRetries
   local fOK = false
+  local fRunning = true
   repeat
     tLog.debug('Initialize OpenOCD.')
     tOpenOCD:initialize()
@@ -54,16 +55,19 @@ function TestClassOpenOCD:run()
     local strResult
     local iResult = tOpenOCD:run(strScript)
     if iResult~=0 then
-      error('Failed to execute the script.')
+      tLog.error('Failed to execute the script.')
+      fRunning = false
     else
       strResult = tOpenOCD:get_result()
       tLog.info('Script result: %s', strResult)
       if strResult=='0' then
         fOK = true
+        fRunning = false
       else
         tLog.debug('The script result is not "0".')
         if ulRetryCnt==0 then
-          break
+          tLog.error('The script did not succeed after %d retries.', ulRetries)
+          fRunning = false
         else
           ulRetryCnt = ulRetryCnt - 1
           tOpenOCD:run('sleep 500')
@@ -73,10 +77,10 @@ function TestClassOpenOCD:run()
 
     tLog.debug('Uninitialize OpenOCD.')
     tOpenOCD:uninit()
-  until fOK==true
+  until fRunning==false
 
   if fOK~=true then
-    error(string.format('The script did not succeed after %d retries.', ulRetries))
+    error('The script did not succeed.')
   else
     tLog.info('')
     tLog.info(' #######  ##    ## ')
